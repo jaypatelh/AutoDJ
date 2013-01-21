@@ -29,6 +29,10 @@ var BACKGROUND_ALPHA = 0.05;
 var STACK_BLUR_RADIUS = 10; 
 
 
+//Volume server data
+var volumeServer = {timer:null, target:0.0, lastTarget:0.0, twoAgoTarget:0.0, threeAgoTarget:0.0, fourAgoTarget:0.0, current:0.0, serverRunning:false};
+
+
 /*
  * Begin shadowboxing code
  */
@@ -50,6 +54,8 @@ $(document).ready(function() {
 
     $('#background').click(function() {
         setBackground();
+        volumeServer.timer = setInterval (adjustVolume, 30);
+        volumeServer.serverRunning = true;
         audiochangefreq = 0;
         audioelem = newAudio();
         audioelem.play();
@@ -225,6 +231,35 @@ function newAudio(){
     return audiotag;
 }
 
+
+function adjustVolume() {
+	if (audioelem.volume == volumeServer.target) return;
+	var newDifference = volumeServer.target - audioelem.volume;
+	var lastDifference = volumeServer.lastTarget - audioelem.volume;
+	var twoAgoDifference = volumeServer.twoAgoTarget - audioelem.volume;
+	var threeAgoDifference = volumeServer.threeAgoTarget - audioelem.volume;
+	var fourAgoDifference = volumeServer.fourAgoTarget - audioelem.volume;
+
+	var difference = (newDifference + lastDifference + twoAgoDifference + threeAgoDifference + fourAgoDifference) / 5;
+	
+	audioelem.volume = audioelem.volume + difference*0.05;
+	console.log("ACTUAL VOLUME: " + audioelem.volume);
+}
+
+
+//Volume level between 0 and 1
+function setVolumeToLevel(level) {
+	if (level > 1 || level < 0) return;
+	else {
+		volumeServer.fourAgoTarget = volumeServer.target;
+		volumeServer.threeAgoTarget = volumeServer.target;
+		volumeServer.twoAgoTarget = volumeServer.target;
+		volumeServer.lastTarget = volumeServer.target;
+		volumeServer.target = level;
+	}
+}
+
+
 /*
  * Returns an ImageData object that contains black pixels for the shadow
  * and white pixels for the background
@@ -247,6 +282,10 @@ function getShadowData() {
         var rBackground = background.data[i];
         var gBackground = background.data[i+1];
         var bBackground = background.data[i+2];
+        
+        background.data[i] = pixelData.data[i];
+        background.data[i+1] = pixelData.data[i+1];
+        background.data[i+2] = pixelData.data[i+2];
         		
         var distance = pixelDistance(rCurrent, gCurrent, bCurrent, rBackground, gBackground, bBackground);        
         
@@ -285,22 +324,22 @@ function getShadowData() {
         }*/
 
         if(count < 1000){
-            audioelem.volume = 0.2;
-            console.log("volume changed to 0.2!");
+            setVolumeToLevel(0.0);
+            console.log("volume changed to 0.0!");
         } else if(count >= 1000 && count < 10000){
-            audioelem.volume = 0.4;
-            console.log("volume changed to 0.4!");
+            setVolumeToLevel(0.2);
+            console.log("volume changed to 0.2!");
         } else if(count >= 10000 && count < 50000){
-            audioelem.volume = 0.6;
-            console.log("volume changed to 0.6!");
+            setVolumeToLevel(0.4);
+            console.log("volume changed to 0.4!");
         } else if(count >= 50000 && count < 100000){
-            audioelem.volume = 0.7;
-            console.log("volume changed to 0.7!");
+            setVolumeToLevel(0.6);
+            console.log("volume changed to 0.6!");
         } else if(count >= 100000 && count < 200000){
-            audioelem.volume = 0.8;
+            setVolumeToLevel(0.8);
             console.log("volume changed to 0.8!");
         } else if(count >= 200000 && count < 300000){
-            audioelem.volume = 1;
+            setVolumeToLevel(1.0);
             console.log("volume changed to 1!");
         }
     //}

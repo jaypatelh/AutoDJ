@@ -313,9 +313,9 @@ function adjustVolume() {
 function setVolumeToLevel(level) {
 	if (level > 1 || level < 0) return;
 	else {
-		volumeServer.fourAgoTarget = volumeServer.target;
-		volumeServer.threeAgoTarget = volumeServer.target;
-		volumeServer.twoAgoTarget = volumeServer.target;
+		volumeServer.fourAgoTarget = volumeServer.threeAgoTarget;
+		volumeServer.threeAgoTarget = volumeServer.twoAgoTarget;
+		volumeServer.twoAgoTarget = volumeServer.lastTarget;
 		volumeServer.lastTarget = volumeServer.target;
 		volumeServer.target = level;
 	}

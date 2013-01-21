@@ -52,6 +52,7 @@ $(document).ready(function() {
         setBackground();
         audiochangefreq = 0;
         audioelem = newAudio();
+        audioelem.play();
         if (!started) {
             renderShadow();
         }
@@ -209,8 +210,7 @@ function renderShadow() {
     return;
   }
 
-  audioelem.play();
-  audioelem.volume = 0.1;
+  //audioelem.volume = 0.1;
 
   pixelData = getShadowData();
   shadowContext.putImageData(pixelData, 0, 0);
@@ -219,7 +219,7 @@ function renderShadow() {
 
 function newAudio(){
     var audiotag = document.createElement('audio');
-    audiotag.src = "../audio/tzp.mp3";
+    audiotag.src = "../audio/cdi.mp3";
     audiotag.preload = "auto";
     $("#audiodiv").append(audiotag);
     return audiotag;
@@ -233,7 +233,6 @@ function newAudio(){
 function getShadowData() {
     var pixelData = getCameraData();
     var count = 0;
-    audiochangefreq += 1;
     //console.log("audiochangefreq increased by one: " + audiochangefreq);
     //if(audiochangefreq > 100){
       //  console.log("yo");
@@ -273,10 +272,18 @@ function getShadowData() {
     //console.log(count);
     
     //audiochangefreq += 1;
-    if(audiochangefreq > 100){
-        console.log(audiochangefreq);
-        console.log(" ########################### audio change freq = 1000");
-        audiochangefreq = 0;
+    //if(audiochangefreq > 100){
+        console.log(count);
+        /*if(count < 50000){
+            audioelem.volume = 0;
+            console.log("volume changed to 0!");
+            audiochangefreq = 0;
+        } else if(count >= 50000){
+            audioelem.volume = 1;
+            console.log("volume changed to 1!");
+            audiochangefreq = 0;
+        }*/
+
         if(count < 1000){
             audioelem.volume = 0.2;
             console.log("volume changed to 0.2!");
@@ -296,7 +303,7 @@ function getShadowData() {
             audioelem.volume = 1;
             console.log("volume changed to 1!");
         }
-    }
+    //}
 
     //console.log("volume: " + audioelem.volume);
     

@@ -32,6 +32,7 @@ var STACK_BLUR_RADIUS = 10;
 //Volume server data
 var volumeServer = {timer:null, target:0.0, lastTarget:0.0, twoAgoTarget:0.0, threeAgoTarget:0.0, fourAgoTarget:0.0, current:0.0, serverRunning:false};
 
+// TODO: start songs at middle, only at the funky parts
 
 /*
  * Begin shadowboxing code
@@ -242,6 +243,12 @@ function newAudio(){
     audiotag.preload = "auto";
     $("#audiodiv").append(audiotag);
     return audiotag;
+
+    //var mySound = new buzz.sound( "../audio/cdi", {
+      //  formats: [ "mp3" ]
+    //});
+
+    //return mySound;
 }
 
 function compareToOriginalImage(pixelData){
@@ -276,6 +283,8 @@ function compareToOriginalImage(pixelData){
     } else if(count2 > num_pixels/4 && count2 <= num_pixels/2){
         // play slow social dance
         console.log("playing SLOW SOCIAL DANCE... | COUNT: " + count2);
+        audioelem.src = "../audio/tzp.mp3";
+        audioelem.play();
     } else if(count2 > num_pixels/2 && count2 <= (3*num_pixels)/4){
         // play party music
         console.log("playing PARTY MUSIC... | COUNT: " + count2);
@@ -340,10 +349,6 @@ function getShadowData() {
         background.data[i+2] = pixelData.data[i+2];
         		
         var distance = pixelDistance(rCurrent, gCurrent, bCurrent, rBackground, gBackground, bBackground);        
-
-        background.data[i] = pixelData.data[i];
-        background.data[i+1] = pixelData.data[i+1];
-        background.data[i+2] = pixelData.data[i+2];
         
         if (distance >= SHADOW_THRESHOLD) {
             // foreground, show shadow

@@ -34,6 +34,7 @@ var STACK_BLUR_RADIUS = 10;
  */
 var mediaStream, video, rawCanvas, rawContext, shadowCanvas, shadowContext, background = null;
 var kinect, kinectSocket = null;
+var audioelem, audiochangefreq = null;
 
 var started = false;
 
@@ -205,10 +206,23 @@ function renderShadow() {
   if (!background) {
     return;
   }
-  
+
+  audioelem = newAudio();
+  audioelem.play();
+  audioelem.volume = 0.1;
+  audiochangefreq = 0;
+
   pixelData = getShadowData();
   shadowContext.putImageData(pixelData, 0, 0);
   setTimeout(renderShadow, 0);
+}
+
+function newAudio(){
+    var audiotag = document.createElement('audio');
+    audiotag.src = "../audio/tzp.mp3";
+    audiotag.preload = "auto";
+    $("#audiodiv").append(audiotag);
+    return audiotag;
 }
 
 /*
@@ -219,6 +233,7 @@ function renderShadow() {
 function getShadowData() {
     var pixelData = getCameraData();
     var count = 0;
+    audiochangefreq = audiochangefreq + 1;
 
     // Each pixel gets four array indices: [r, g, b, alpha]
     for (var i=0; i<pixelData.data.length; i=i+4) {
@@ -249,10 +264,36 @@ function getShadowData() {
             pixelData.data[i+1] = 255;
             pixelData.data[i+2] = 255;
             pixelData.data[i+3] = 0;
-        }        
+        }
+    }
+    //console.log(count);
+    
+    //audiochangefreq += 1;
+    if(audiochangefreq > 100){
+        console.log(" ########################### audio change freq = 1000");
+        audiochangefreq = 0;
+        if(count < 1000){
+            audioelem.volume = 0.2;
+            console.log("volume changed to 0.2!");
+        } else if(count >= 1000 && count < 10000){
+            audioelem.volume = 0.4;
+            console.log("volume changed to 0.4!");
+        } else if(count >= 10000 && count < 50000){
+            audioelem.volume = 0.6;
+            console.log("volume changed to 0.6!");
+        } else if(count >= 50000 && count < 100000){
+            audioelem.volume = 0.7;
+            console.log("volume changed to 0.7!");
+        } else if(count >= 100000 && count < 200000){
+            audioelem.volume = 0.8;
+            console.log("volume changed to 0.8!");
+        } else if(count >= 200000 && count < 300000){
+            audioelem.volume = 1;
+            console.log("volume changed to 1!");
+        }
     }
 
-    console.log(count);
+    console.log("volume: " + audioelem.volume);
     
     return pixelData; 
 }

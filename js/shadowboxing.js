@@ -218,6 +218,7 @@ function renderShadow() {
 
 function getShadowData() {
     var pixelData = getCameraData();
+    var count = 0;
 
     // Each pixel gets four array indices: [r, g, b, alpha]
     for (var i=0; i<pixelData.data.length; i=i+4) {
@@ -236,6 +237,7 @@ function getShadowData() {
             pixelData.data[i] = 0;
             pixelData.data[i+1] = 0;
             pixelData.data[i+2] = 0;
+            count += 1;
         } else {
             // background
             
@@ -249,6 +251,8 @@ function getShadowData() {
             pixelData.data[i+3] = 0;
         }        
     }
+
+    console.log(count);
     
     return pixelData; 
 }

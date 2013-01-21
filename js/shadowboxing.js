@@ -50,6 +50,8 @@ $(document).ready(function() {
 
     $('#background').click(function() {
         setBackground();
+        audiochangefreq = 0;
+        audioelem = newAudio();
         if (!started) {
             renderShadow();
         }
@@ -207,10 +209,8 @@ function renderShadow() {
     return;
   }
 
-  audioelem = newAudio();
   audioelem.play();
   audioelem.volume = 0.1;
-  audiochangefreq = 0;
 
   pixelData = getShadowData();
   shadowContext.putImageData(pixelData, 0, 0);
@@ -233,7 +233,11 @@ function newAudio(){
 function getShadowData() {
     var pixelData = getCameraData();
     var count = 0;
-    audiochangefreq = audiochangefreq + 1;
+    audiochangefreq += 1;
+    //console.log("audiochangefreq increased by one: " + audiochangefreq);
+    //if(audiochangefreq > 100){
+      //  console.log("yo");
+    //}
 
     // Each pixel gets four array indices: [r, g, b, alpha]
     for (var i=0; i<pixelData.data.length; i=i+4) {
@@ -270,6 +274,7 @@ function getShadowData() {
     
     //audiochangefreq += 1;
     if(audiochangefreq > 100){
+        console.log(audiochangefreq);
         console.log(" ########################### audio change freq = 1000");
         audiochangefreq = 0;
         if(count < 1000){
@@ -293,7 +298,7 @@ function getShadowData() {
         }
     }
 
-    console.log("volume: " + audioelem.volume);
+    //console.log("volume: " + audioelem.volume);
     
     return pixelData; 
 }

@@ -32,9 +32,13 @@ var STACK_BLUR_RADIUS = 10;
 /*
  * Begin shadowboxing code
  */
-var mediaStream, video, rawCanvas, rawContext, shadowCanvas, shadowContext, background = null;
+var mediaStream, video, rawCanvas, rawContext, shadowCanvas, shadowContext, background, background_fixed = null;
 var kinect, kinectSocket = null;
 var audioelem, audiochangefreq = null;
+var num_pixels = null;
+var instrumentals;
+var socialdance;
+
 
 var started = false;
 
@@ -198,7 +202,16 @@ function getCameraData() {
  */
 function setBackground() {
     var pixelData = getCameraData();
+    num_pixels = pixelData.data.length/4;
     background = pixelData;
+    background_fixed = new Object();
+    background_fixed.data = new Array();
+    for (var i=0; i<pixelData.data.length; i=i+4) {
+        background_fixed.data[i] = pixelData.data[i];
+        background_fixed.data[i+1] = pixelData.data[i+1];
+        background_fixed.data[i+2] = pixelData.data[i+2];
+        background_fixed.data[i+3] = pixelData.data[i+3];
+    }
 }
 
 /*
@@ -225,13 +238,55 @@ function newAudio(){
     return audiotag;
 }
 
+function compareToOriginalImage(pixelData){
+    // need to compare pixelData with background_fixed
+    // count the number of pixels that are different
+    // change genre depending on how many pixels are different
+
+    var count2 = 0; // number of pixels that are different from the original image
+
+    // Each pixel gets four array indices: [r, g, b, alpha]
+    for (var i=0; i<pixelData.data.length; i=i+4) {
+        var rCurrent = pixelData.data[i];
+        var gCurrent = pixelData.data[i+1];
+        var bCurrent = pixelData.data[i+2];
+        
+        var rBackground = background_fixed.data[i];
+        var gBackground = background_fixed.data[i+1];
+        var bBackground = background_fixed.data[i+2];
+                
+        var distance = pixelDistance(rCurrent, gCurrent, bCurrent, rBackground, gBackground, bBackground);        
+
+        if (distance >= SHADOW_THRESHOLD) {
+            count2 += 1;
+        }
+    }
+
+    console.log("num_pixels: " + num_pixels);
+
+    if(count2 <= num_pixels/4){
+        // play an instrumental
+        console.log("playing INSTRUMENTAL... | COUNT: " + count2);
+    } else if(count2 > num_pixels/4 && count2 <= num_pixels/2){
+        // play slow social dance
+        console.log("playing SLOW SOCIAL DANCE... | COUNT: " + count2);
+    } else if(count2 > num_pixels/2 && count2 <= (3*num_pixels)/4){
+        // play party music
+        console.log("playing PARTY MUSIC... | COUNT: " + count2);
+    } else if(count2 > (3*num_pixels)/4 && count2 <= num_pixels){
+        // play dubstep/skrillex/gangnam style
+        console.log("playing DUBSTEP... | COUNT: " + count2);
+    }
+}
+
 /*
  * Returns an ImageData object that contains black pixels for the shadow
  * and white pixels for the background
  */
 
 function getShadowData() {
-    var pixelData = getCameraData();
+    var pixelData = getCameraData(); // get current frame from camera
+    compareToOriginalImage(pixelData);
     var count = 0;
     //console.log("audiochangefreq increased by one: " + audiochangefreq);
     //if(audiochangefreq > 100){
@@ -249,6 +304,10 @@ function getShadowData() {
         var bBackground = background.data[i+2];
         		
         var distance = pixelDistance(rCurrent, gCurrent, bCurrent, rBackground, gBackground, bBackground);        
+
+        background.data[i] = pixelData.data[i];
+        background.data[i+1] = pixelData.data[i+1];
+        background.data[i+2] = pixelData.data[i+2];
         
         if (distance >= SHADOW_THRESHOLD) {
             // foreground, show shadow
@@ -273,7 +332,7 @@ function getShadowData() {
     
     //audiochangefreq += 1;
     //if(audiochangefreq > 100){
-        console.log(count);
+        //console.log(count);
         /*if(count < 50000){
             audioelem.volume = 0;
             console.log("volume changed to 0!");
@@ -285,25 +344,27 @@ function getShadowData() {
         }*/
 
         if(count < 1000){
-            audioelem.volume = 0.2;
-            console.log("volume changed to 0.2!");
+            audioelem.volume = 0;
+            //console.log("volume changed to 0.2!");
         } else if(count >= 1000 && count < 10000){
-            audioelem.volume = 0.4;
-            console.log("volume changed to 0.4!");
+            audioelem.volume = 0.3;
+            //console.log("volume changed to 0.4!");
         } else if(count >= 10000 && count < 50000){
-            audioelem.volume = 0.6;
-            console.log("volume changed to 0.6!");
+            audioelem.volume = 0.4;
+            //console.log("volume changed to 0.6!");
         } else if(count >= 50000 && count < 100000){
             audioelem.volume = 0.7;
-            console.log("volume changed to 0.7!");
+            //console.log("volume changed to 0.7!");
         } else if(count >= 100000 && count < 200000){
             audioelem.volume = 0.8;
-            console.log("volume changed to 0.8!");
+            //console.log("volume changed to 0.8!");
         } else if(count >= 200000 && count < 300000){
             audioelem.volume = 1;
-            console.log("volume changed to 1!");
+            //console.log("volume changed to 1!");
         }
     //}
+
+    //background = pixelData;
 
     //console.log("volume: " + audioelem.volume);
     

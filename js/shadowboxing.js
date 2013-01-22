@@ -43,7 +43,7 @@ var mediaStream, video, rawCanvas, rawContext, shadowCanvas, shadowContext, back
 var kinect, kinectSocket = null;
 var audioelem, audioelemTwo, audiochangefreq = null;
 var num_pixels = null;
-var tier1_count, tier2_count, tier3_count, tier4_count;
+var tier0_count, tier1_count, tier2_count, tier3_count;
 var timeInBetween, timeAtSongChange = null;
 var currTier, numFrames;
 
@@ -69,12 +69,12 @@ $(document).ready(function() {
         audioelem.play();
         timeAtSongChange = new Date().getTime();
         timeInBetween = 0;
-        currTier = 1;
+        currTier = 0;
         numFrames = 0;
+        tier0_count = 0;
         tier1_count = 0;
         tier2_count = 0;
         tier3_count = 0;
-        tier4_count = 0;
         setInterval(considerChangingSong, 20000); // consider changing song every 5 secs
         if (!started) {
             renderShadow();
@@ -252,13 +252,13 @@ function newAudio(tier){
     
     //Source enumeration
     if (tier == 0) {
-		audiotag.src = "../audio/cdi.mp3";
+		audiotag.src = "../audio/sonata.mp3";
     } else if (tier == 1) {
-	    audiotag.src = "../audio/Save The World (Style Of Eye & Carli Remix).m4a";
+	    audiotag.src = "../audio/lacamisa.m4a";
 	} else if (tier == 2) {
-		audiotag.src = "../audio/Pressure (Alesso Remix).m4a";
-    } else {
-	    audiotag.src = "../audio/Save The World (Style Of Eye & Carli Remix).m4a";
+		audiotag.src = "../audio/beatit.m4a";
+    } else if (tier == 3){
+	    audiotag.src = "../audio/barbra.mp3";
     }
     
     audiotag.preload = "auto";
@@ -267,48 +267,48 @@ function newAudio(tier){
 }
 
 function considerChangingSong(){
-    console.log("considering changing song... | " + tier1_count + " | " + tier2_count + " | " + tier3_count + " | " + tier4_count);
-    var total = tier1_count + tier2_count + tier3_count + tier4_count;
+    console.log("considering changing song... | " + tier0_count + " | " + tier1_count + " | " + tier2_count + " | " + tier3_count);
+    var total = tier0_count + tier1_count + tier2_count + tier3_count;
     if(total > 0){
+        var tier0_frac = (tier0_count / total)*100;
         var tier1_frac = (tier1_count / total)*100;
         var tier2_frac = (tier2_count / total)*100;
         var tier3_frac = (tier3_count / total)*100;
-        var tier4_frac = (tier4_count / total)*100;
         //console.log(tier1_frac + "|" + tier2_frac + "|" + tier3_frac + "|" + tier4_frac);
-        if(tier1_frac > 50){
+        if(tier0_frac > 50){
+            tier0_count = 0;
             tier1_count = 0;
             tier2_count = 0;
             tier3_count = 0;
-            tier4_count = 0;
+            if(currTier != 0){
+                setSongToTier(0);
+            }
+        } else if(tier1_frac > 50){
+            tier0_count = 0;
+            tier1_count = 0;
+            tier2_count = 0;
+            tier3_count = 0;
             if(currTier != 1){
-                changeSongToTier(1);
+                setSongToTier(1);
             }
         } else if(tier2_frac > 50){
-        tier1_count = 0;
-        tier2_count = 0;
-        tier3_count = 0;
-        tier4_count = 0;
-        if(currTier != 2){
-            changeSongToTier(2);
-        }
-    } else if(tier3_frac > 50){
-        tier1_count = 0;
-        tier2_count = 0;
-        tier3_count = 0;
-        tier4_count = 0;
-        if(currTier != 3){
-            changeSongToTier(3);
-        }
-    } else if(tier4_frac > 50){
-        tier1_count = 0;
-        tier2_count = 0;
-        tier3_count = 0;
-        tier4_count = 0;
-        if(currTier != 4){
-            changeSongToTier(4);
+            tier0_count = 0;
+            tier1_count = 0;
+            tier2_count = 0;
+            tier3_count = 0;
+            if(currTier != 2){
+                setSongToTier(2);
+            }
+        } else if(tier3_frac > 50){
+            tier0_count = 0;
+            tier1_count = 0;
+            tier2_count = 0;
+            tier3_count = 0;
+            if(currTier != 3){
+                setSongToTier(3);
+            }
         }
     }
-}
 
     // another way is to see if any of them is more than 50%, and only then change.
     //var max = Math.max(tier1_frac, tier2_frac, tier3_frac, tier4_frac);
@@ -347,68 +347,15 @@ function considerChangingSong(){
     }*/
 }
 
-function changeSongToTier(val){
-    console.log("Changing song to tier " + val + "!");
-    currTier = val;
-
-    // time difference from last song change
-    var prevTimeAtSongChange = timeAtSongChange;
-    timeAtSongChange = new Date().getTime();
-    timeInBetween = timeAtSongChange - prevTimeAtSongChange;
-    console.log(timeInBetween/1000 + "seconds from last change!");
-}
-
 function inc(val){
-    /*if(numFrames > 100){
-        tier1_count = 0;
-        tier2_count = 0;
-        tier3_count = 0;
-        tier4_count = 0;
-    }*/
-    if(val == 1){
+    if(val == 0){
+        tier0_count += 1;
+    } else if(val == 1){
         tier1_count += 1;
-        //console.log("incremented tier1_count!");
-        //tier2_count = 0;
-        //tier3_count = 0;
-        //tier4_count = 0;
-
-        //if(tier1_count > 100){
-          //  tier1_count = 0;
-            //considerChangingSong();
-        //}
     } else if(val == 2){
-        //tier1_count = 0;
         tier2_count += 1;
-        //console.log("incremented tier2_count!");
-        //tier3_count = 0;
-        //tier4_count = 0;
-
-        //if(tier2_count > 100){
-          //  tier2_count = 0;
-            //considerChangingSong();
-        //}
     } else if(val == 3){
-        //tier1_count = 0;
-        //tier2_count = 0;
         tier3_count += 1;
-        //console.log("incremented tier3_count!");
-        //tier4_count = 0;
-
-        //if(tier3_count > 100){
-          //  tier3_count = 0;
-            //considerChangingSong();
-        //}
-    } else if(val == 4){
-        //tier1_count = 0;
-        //tier2_count = 0;
-        //tier3_count = 0;
-        tier4_count += 1;
-        //console.log("incremented tier4_count!");
-
-        //if(tier4_count > 100){
-          //  tier4_count = 0;
-            //considerChangingSong();
-        //}
         // what happens if I put in a request for a song and server decides to not play it yet because minimum time has not yet passed, and then I put in another request after that?
     }
 }
@@ -438,33 +385,28 @@ function compareToOriginalImage(pixelData){
     }
 
     if(count2 <= num_pixels/4){
-        // play an instrumental
-        inc(1);
-        setSongToTier(0);
-        //console.log("playing INSTRUMENTAL... | COUNT: " + count2);
+        inc(0);
     } else if(count2 > num_pixels/4 && count2 <= num_pixels/2){
-        // play slow social dance
-        //console.log("playing SLOW SOCIAL DANCE... | COUNT: " + count2);
-        inc(2);
-        setSongToTier(1);
+        inc(1);
     } else if(count2 > num_pixels/2 && count2 <= (3*num_pixels)/4){
-        // play party music
-        inc(3);
-        setSongToTier(2);
-        //console.log("playing PARTY MUSIC... | COUNT: " + count2);
+        inc(2);
     } else if(count2 > (3*num_pixels)/4 && count2 <= num_pixels){
-        // play dubstep/skrillex/gangnam style
-        inc(4);
-        setSongToTier(2);
-        //console.log("playing DUBSTEP... | COUNT: " + count2);
+        inc(3);
     }
 }
 
-
 function setSongToTier(tier) {
 	volumeServer.targetTier = tier;
-}
+    currTier = tier;
 
+    console.log("Changing song to tier " + tier + "!");
+
+    // time difference from last song change
+    var prevTimeAtSongChange = timeAtSongChange;
+    timeAtSongChange = new Date().getTime();
+    timeInBetween = timeAtSongChange - prevTimeAtSongChange;
+    console.log(timeInBetween/1000 + "seconds from last change!");
+}
 
 function adjustedTransitionFraction(rawFraction) {
 	var newFraction;
@@ -625,10 +567,10 @@ function getShadowData() {
         }*/
 
         if(count < 1000){
-            setVolumeToLevel(0.2);
+            setVolumeToLevel(0.05);
             //console.log("volume changed to 0.0!");
         } else if(count >= 1000 && count < 10000){
-            setVolumeToLevel(0.4);
+            setVolumeToLevel(0.25);
             //console.log("volume changed to 0.2!");
         } else if(count >= 10000 && count < 50000){
             setVolumeToLevel(0.5);

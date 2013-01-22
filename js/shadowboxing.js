@@ -30,7 +30,8 @@ var STACK_BLUR_RADIUS = 10;
 
 
 //Volume server data
-var volumeServer = {timer:null, target:0.0, lastTarget:0.0, twoAgoTarget:0.0, threeAgoTarget:0.0, fourAgoTarget:0.0, current:0.0, serverRunning:false};
+var volumeServer = {timer:null, target:0.0, lastTarget:0.0, twoAgoTarget:0.0, threeAgoTarget:0.0, fourAgoTarget:0.0, current:0.0, audioStreamOneActive: true, inTransition: false, transitionStartTime: null, currentTier: 0, targetTier: 0, transitionTarget: 0, serverRunning:false, startTime: null};
+var TRANSITION_LENGTH = 5000;
 
 // TODO: start songs at middle, only at the funky parts
 
@@ -39,7 +40,7 @@ var volumeServer = {timer:null, target:0.0, lastTarget:0.0, twoAgoTarget:0.0, th
  */
 var mediaStream, video, rawCanvas, rawContext, shadowCanvas, shadowContext, background, background_fixed = null;
 var kinect, kinectSocket = null;
-var audioelem, audiochangefreq = null;
+var audioelem, audioelemTwo, audiochangefreq = null;
 var num_pixels = null;
 var instrumentals;
 var socialdance;
@@ -61,8 +62,9 @@ $(document).ready(function() {
         setBackground();
         volumeServer.timer = setInterval (adjustVolume, 30);
         volumeServer.serverRunning = true;
+        volumeServer.startTime = (new Date).getTime();
         audiochangefreq = 0;
-        audioelem = newAudio();
+        audioelem = newAudio(0);
         audioelem.play();
         if (!started) {
             renderShadow();
@@ -237,9 +239,20 @@ function renderShadow() {
   setTimeout(renderShadow, 0);
 }
 
-function newAudio(){
+function newAudio(tier){
     var audiotag = document.createElement('audio');
-    audiotag.src = "../audio/cdi.mp3";
+    
+    //Source enumeration
+    if (tier == 0) {
+		audiotag.src = "../audio/cdi.mp3";
+    } else if (tier == 1) {
+	    audiotag.src = "../audio/Save The World (Style Of Eye & Carli Remix).m4a";
+	} else if (tier == 2) {
+		audiotag.src = "../audio/Pressure (Alesso Remix).m4a";
+    } else {
+	    audiotag.src = "../audio/Save The World (Style Of Eye & Carli Remix).m4a";
+    }
+    
     audiotag.preload = "auto";
     $("#audiodiv").append(audiotag);
     return audiotag;
@@ -275,37 +288,111 @@ function compareToOriginalImage(pixelData){
         }
     }
 
-    console.log("num_pixels: " + num_pixels);
-
     if(count2 <= num_pixels/4){
         // play an instrumental
-        console.log("playing INSTRUMENTAL... | COUNT: " + count2);
+        setSongToTier(0);
+        //console.log("playing INSTRUMENTAL... | COUNT: " + count2);
     } else if(count2 > num_pixels/4 && count2 <= num_pixels/2){
         // play slow social dance
-        console.log("playing SLOW SOCIAL DANCE... | COUNT: " + count2);
-        audioelem.src = "../audio/tzp.mp3";
-        audioelem.play();
+        //console.log("playing SLOW SOCIAL DANCE... | COUNT: " + count2);
+        setSongToTier(1);
     } else if(count2 > num_pixels/2 && count2 <= (3*num_pixels)/4){
         // play party music
-        console.log("playing PARTY MUSIC... | COUNT: " + count2);
+        setSongToTier(2);
+        //console.log("playing PARTY MUSIC... | COUNT: " + count2);
     } else if(count2 > (3*num_pixels)/4 && count2 <= num_pixels){
         // play dubstep/skrillex/gangnam style
-        console.log("playing DUBSTEP... | COUNT: " + count2);
+        setSongToTier(2);
+        //console.log("playing DUBSTEP... | COUNT: " + count2);
     }
 }
 
-function adjustVolume() {
-	if (audioelem.volume == volumeServer.target) return;
-	var newDifference = volumeServer.target - audioelem.volume;
-	var lastDifference = volumeServer.lastTarget - audioelem.volume;
-	var twoAgoDifference = volumeServer.twoAgoTarget - audioelem.volume;
-	var threeAgoDifference = volumeServer.threeAgoTarget - audioelem.volume;
-	var fourAgoDifference = volumeServer.fourAgoTarget - audioelem.volume;
+
+function setSongToTier(tier) {
+	volumeServer.targetTier = tier;
+}
+
+
+function adjustedTransitionFraction(rawFraction) {
+	var newFraction;
+	if (rawFraction <= 1.0) newFraction = 0;
+	else {
+		var newInput = rawFraction - 1.0;
+		newFraction = 3*Math.pow(newInput, 2) - 2*Math.pow(newInput, 3);
+	}
+	if (rawFraction >= 2.0) newFraction = 1;
+	return newFraction;
+}
+
+
+
+function adjustVolume() {	
+	//Check for song transition
+	var timeElapsed = (new Date).getTime() - volumeServer.startTime;
+	//console.log("Elapsed: " + timeElapsed + ", target: " + volumeServer.targetTier + ", current: " + volumeServer.currentTier);
+	if (volumeServer.targetTier != volumeServer.currentTier && timeElapsed >= 20000) {
+		volumeServer.inTransition = true;
+		volumeServer.transitionTarget = volumeServer.targetTier;
+		volumeServer.transitionStartTime = (new Date).getTime();
+		volumeServer.startTime = (new Date).getTime();
+		if (volumeServer.audioStreamOneActive) {
+			volumeServer.audioStreamOneActive = false;
+			audioelemTwo = newAudio(volumeServer.targetTier);
+			audioelemTwo.play();
+			audioelemTwo.volume = 0;
+		} else {
+			volumeServer.audioStreamOneActive = true;
+			audioelem = newAudio(volumeServer.targetTier);
+			audioelem.play();
+			audioelem.volume = 0;
+		}
+	}
+	
+	//Determine new volume by smoothing over last five target volumes
+	var currentVolume;
+	if (volumeServer.inTransition) currentVolume = audioelem.volume + audioelemTwo.volume;
+	else if (volumeServer.audioStreamOneActive) currentVolume = audioelem.volume;
+	else currentVolume = audioelemTwo.volume;
+	
+	var newDifference = volumeServer.target - currentVolume;
+	var lastDifference = volumeServer.lastTarget - currentVolume;
+	var twoAgoDifference = volumeServer.twoAgoTarget - currentVolume;
+	var threeAgoDifference = volumeServer.threeAgoTarget - currentVolume;
+	var fourAgoDifference = volumeServer.fourAgoTarget - currentVolume;
 
 	var difference = (newDifference + lastDifference + twoAgoDifference + threeAgoDifference + fourAgoDifference) / 5;
 	
-	audioelem.volume = audioelem.volume + difference*0.05;
-	console.log("ACTUAL VOLUME: " + audioelem.volume);
+	var newVolume = currentVolume + difference*0.05;
+	//console.log("ACTUAL VOLUME: " + audioelem.volume);
+	
+	//Adjust volume to case
+	if (volumeServer.inTransition) {
+		var transitionFraction = ((new Date).getTime() - volumeServer.transitionStartTime) / TRANSITION_LENGTH;
+		transitionFraction = adjustedTransitionFraction(transitionFraction);
+		console.log("Transition fraction: " + transitionFraction);
+		if (transitionFraction >= 1) {
+			transitionFraction = 1;
+			volumeServer.inTransition = false;
+			volumeServer.currentTier = volumeServer.transitionTarget;
+			if (volumeServer.audioStreamOneActive) audioelemTwo.parentNode.removeChild(audioelemTwo);
+			else audioelem.parentNode.removeChild(audioelem);
+		}
+		
+		if (volumeServer.audioStreamOneActive) {
+			audioelem.volume = transitionFraction*newVolume;
+			audioelemTwo.volume = (1 - transitionFraction)*newVolume;
+		} else {
+			audioelemTwo.volume = transitionFraction*newVolume;
+			audioelem.volume = (1 - transitionFraction)*newVolume;
+		}
+		//console.log("Volume One: " + audioelem.volume + ", Volume Two: " + audioelemTwo.volume);
+	} else {
+		if (volumeServer.audioStreamOneActive) {
+			audioelem.volume = newVolume;
+		} else {
+			audioelemTwo.volume = newVolume;
+		}
+	}
 }
 
 
@@ -385,23 +472,23 @@ function getShadowData() {
         }*/
 
         if(count < 1000){
-            setVolumeToLevel(0.0);
-            console.log("volume changed to 0.0!");
-        } else if(count >= 1000 && count < 10000){
             setVolumeToLevel(0.2);
-            console.log("volume changed to 0.2!");
-        } else if(count >= 10000 && count < 50000){
+            //console.log("volume changed to 0.0!");
+        } else if(count >= 1000 && count < 10000){
             setVolumeToLevel(0.4);
-            console.log("volume changed to 0.4!");
+            //console.log("volume changed to 0.2!");
+        } else if(count >= 10000 && count < 50000){
+            setVolumeToLevel(0.5);
+            //console.log("volume changed to 0.4!");
         } else if(count >= 50000 && count < 100000){
-            setVolumeToLevel(0.6);
-            console.log("volume changed to 0.6!");
+            setVolumeToLevel(0.7);
+            //console.log("volume changed to 0.6!");
         } else if(count >= 100000 && count < 200000){
-            setVolumeToLevel(0.8);
-            console.log("volume changed to 0.8!");
+            setVolumeToLevel(0.9);
+            //console.log("volume changed to 0.8!");
         } else if(count >= 200000 && count < 300000){
             setVolumeToLevel(1.0);
-            console.log("volume changed to 1!");
+            //console.log("volume changed to 1!");
         }
     //}
 

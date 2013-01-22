@@ -21,6 +21,7 @@ var INPUT = "webcam";
 // A difference of >= SHADOW_THRESHOLD across RGB space from the background
 // frame is marked as foreground
 var SHADOW_THRESHOLD = 10;
+var SHADOW_THRESHOLD_CMP_ORIGINAL = 30;
 // Between 0 and 1: how much memory we retain of previous frames.
 // In other words, how much we let the background adapt over time to more recent frames
 var BACKGROUND_ALPHA = 0.05;
@@ -41,9 +42,9 @@ var mediaStream, video, rawCanvas, rawContext, shadowCanvas, shadowContext, back
 var kinect, kinectSocket = null;
 var audioelem, audiochangefreq = null;
 var num_pixels = null;
-var instrumentals;
-var socialdance;
-
+var tier1_count, tier2_count, tier3_count, tier4_count;
+var timeInBetween, timeAtSongChange = null;
+var currTier, numFrames;
 
 var started = false;
 
@@ -63,7 +64,17 @@ $(document).ready(function() {
         volumeServer.serverRunning = true;
         audiochangefreq = 0;
         audioelem = newAudio();
+        //audioelem.volume = 0.2;
         audioelem.play();
+        timeAtSongChange = new Date().getTime();
+        timeInBetween = 0;
+        currTier = 1;
+        numFrames = 0;
+        tier1_count = 0;
+        tier2_count = 0;
+        tier3_count = 0;
+        tier4_count = 0;
+        setInterval(considerChangingSong, 20000); // consider changing song every 5 secs
         if (!started) {
             renderShadow();
         }
@@ -230,8 +241,6 @@ function renderShadow() {
     return;
   }
 
-  //audioelem.volume = 0.1;
-
   pixelData = getShadowData();
   shadowContext.putImageData(pixelData, 0, 0);
   setTimeout(renderShadow, 0);
@@ -243,12 +252,153 @@ function newAudio(){
     audiotag.preload = "auto";
     $("#audiodiv").append(audiotag);
     return audiotag;
+}
 
-    //var mySound = new buzz.sound( "../audio/cdi", {
-      //  formats: [ "mp3" ]
-    //});
+function considerChangingSong(){
+    console.log("considering changing song... | " + tier1_count + " | " + tier2_count + " | " + tier3_count + " | " + tier4_count);
+    var total = tier1_count + tier2_count + tier3_count + tier4_count;
+    if(total > 0){
+        var tier1_frac = (tier1_count / total)*100;
+        var tier2_frac = (tier2_count / total)*100;
+        var tier3_frac = (tier3_count / total)*100;
+        var tier4_frac = (tier4_count / total)*100;
+        //console.log(tier1_frac + "|" + tier2_frac + "|" + tier3_frac + "|" + tier4_frac);
+        if(tier1_frac > 50){
+            tier1_count = 0;
+            tier2_count = 0;
+            tier3_count = 0;
+            tier4_count = 0;
+            if(currTier != 1){
+                changeSongToTier(1);
+            }
+        } else if(tier2_frac > 50){
+        tier1_count = 0;
+        tier2_count = 0;
+        tier3_count = 0;
+        tier4_count = 0;
+        if(currTier != 2){
+            changeSongToTier(2);
+        }
+    } else if(tier3_frac > 50){
+        tier1_count = 0;
+        tier2_count = 0;
+        tier3_count = 0;
+        tier4_count = 0;
+        if(currTier != 3){
+            changeSongToTier(3);
+        }
+    } else if(tier4_frac > 50){
+        tier1_count = 0;
+        tier2_count = 0;
+        tier3_count = 0;
+        tier4_count = 0;
+        if(currTier != 4){
+            changeSongToTier(4);
+        }
+    }
+}
 
-    //return mySound;
+    // another way is to see if any of them is more than 50%, and only then change.
+    //var max = Math.max(tier1_frac, tier2_frac, tier3_frac, tier4_frac);
+    /*if(max == tier1_frac){
+        if(currTier != 1){
+            tier1_count = 0;
+            tier2_count = 0;
+            tier3_count = 0;
+            tier4_count = 0;
+            changeSongToTier(1);
+        }
+    } else if(max == tier2_frac){
+        if(currTier != 2){
+            tier1_count = 0;
+            tier2_count = 0;
+            tier3_count = 0;
+            tier4_count = 0;
+            changeSongToTier(2);   
+        }
+    } else if(max == tier3_frac){
+        if(currTier != 3){
+            tier1_count = 0;
+            tier2_count = 0;
+            tier3_count = 0;
+            tier4_count = 0;
+            changeSongToTier(3);
+        }
+    } else if(max == tier4_frac){
+        if(currTier != 4){
+            tier1_count = 0;
+            tier2_count = 0;
+            tier3_count = 0;
+            tier4_count = 0;
+            changeSongToTier(4);
+        }
+    }*/
+}
+
+function changeSongToTier(val){
+    console.log("Changing song to tier " + val + "!");
+    currTier = val;
+
+    // time difference from last song change
+    var prevTimeAtSongChange = timeAtSongChange;
+    timeAtSongChange = new Date().getTime();
+    timeInBetween = timeAtSongChange - prevTimeAtSongChange;
+    console.log(timeInBetween/1000 + "seconds from last change!");
+}
+
+function inc(val){
+    /*if(numFrames > 100){
+        tier1_count = 0;
+        tier2_count = 0;
+        tier3_count = 0;
+        tier4_count = 0;
+    }*/
+    if(val == 1){
+        tier1_count += 1;
+        //console.log("incremented tier1_count!");
+        //tier2_count = 0;
+        //tier3_count = 0;
+        //tier4_count = 0;
+
+        //if(tier1_count > 100){
+          //  tier1_count = 0;
+            //considerChangingSong();
+        //}
+    } else if(val == 2){
+        //tier1_count = 0;
+        tier2_count += 1;
+        //console.log("incremented tier2_count!");
+        //tier3_count = 0;
+        //tier4_count = 0;
+
+        //if(tier2_count > 100){
+          //  tier2_count = 0;
+            //considerChangingSong();
+        //}
+    } else if(val == 3){
+        //tier1_count = 0;
+        //tier2_count = 0;
+        tier3_count += 1;
+        //console.log("incremented tier3_count!");
+        //tier4_count = 0;
+
+        //if(tier3_count > 100){
+          //  tier3_count = 0;
+            //considerChangingSong();
+        //}
+    } else if(val == 4){
+        //tier1_count = 0;
+        //tier2_count = 0;
+        //tier3_count = 0;
+        tier4_count += 1;
+        //console.log("incremented tier4_count!");
+
+        //if(tier4_count > 100){
+          //  tier4_count = 0;
+            //considerChangingSong();
+        //}
+        // what happens if I put in a request for a song and server decides to not play it yet because minimum time has not yet passed, and then I put in another request after that?
+    }
 }
 
 function compareToOriginalImage(pixelData){
@@ -267,30 +417,32 @@ function compareToOriginalImage(pixelData){
         var rBackground = background_fixed.data[i];
         var gBackground = background_fixed.data[i+1];
         var bBackground = background_fixed.data[i+2];
-                
+        
         var distance = pixelDistance(rCurrent, gCurrent, bCurrent, rBackground, gBackground, bBackground);        
 
-        if (distance >= SHADOW_THRESHOLD) {
+        if (distance >= SHADOW_THRESHOLD_CMP_ORIGINAL) {
             count2 += 1;
         }
     }
 
-    console.log("num_pixels: " + num_pixels);
-
     if(count2 <= num_pixels/4){
         // play an instrumental
-        console.log("playing INSTRUMENTAL... | COUNT: " + count2);
+        //console.log("playing INSTRUMENTAL... | COUNT: " + count2);
+        inc(1);
     } else if(count2 > num_pixels/4 && count2 <= num_pixels/2){
         // play slow social dance
-        console.log("playing SLOW SOCIAL DANCE... | COUNT: " + count2);
-        audioelem.src = "../audio/tzp.mp3";
-        audioelem.play();
+        //console.log("playing SLOW SOCIAL DANCE... | COUNT: " + count2);
+        inc(2);
+        //audioelem.src = "../audio/tzp.mp3";
+        //audioelem.play();
     } else if(count2 > num_pixels/2 && count2 <= (3*num_pixels)/4){
         // play party music
-        console.log("playing PARTY MUSIC... | COUNT: " + count2);
+        //console.log("playing PARTY MUSIC... | COUNT: " + count2);
+        inc(3);
     } else if(count2 > (3*num_pixels)/4 && count2 <= num_pixels){
         // play dubstep/skrillex/gangnam style
-        console.log("playing DUBSTEP... | COUNT: " + count2);
+        //console.log("playing DUBSTEP... | COUNT: " + count2);
+        inc(4);
     }
 }
 
@@ -305,7 +457,7 @@ function adjustVolume() {
 	var difference = (newDifference + lastDifference + twoAgoDifference + threeAgoDifference + fourAgoDifference) / 5;
 	
 	audioelem.volume = audioelem.volume + difference*0.05;
-	console.log("ACTUAL VOLUME: " + audioelem.volume);
+	//console.log("ACTUAL VOLUME: " + audioelem.volume);
 }
 
 
@@ -386,22 +538,22 @@ function getShadowData() {
 
         if(count < 1000){
             setVolumeToLevel(0.0);
-            console.log("volume changed to 0.0!");
+            //console.log("volume changed to 0.0!");
         } else if(count >= 1000 && count < 10000){
             setVolumeToLevel(0.2);
-            console.log("volume changed to 0.2!");
+            //console.log("volume changed to 0.2!");
         } else if(count >= 10000 && count < 50000){
             setVolumeToLevel(0.4);
-            console.log("volume changed to 0.4!");
+            //console.log("volume changed to 0.4!");
         } else if(count >= 50000 && count < 100000){
             setVolumeToLevel(0.6);
-            console.log("volume changed to 0.6!");
+            //console.log("volume changed to 0.6!");
         } else if(count >= 100000 && count < 200000){
             setVolumeToLevel(0.8);
-            console.log("volume changed to 0.8!");
+            //console.log("volume changed to 0.8!");
         } else if(count >= 200000 && count < 300000){
             setVolumeToLevel(1.0);
-            console.log("volume changed to 1!");
+            //console.log("volume changed to 1!");
         }
     //}
 

@@ -244,13 +244,13 @@ function newAudio(tier){
     
     //Source enumeration
     if (tier == 0) {
-		audiotag.src = "../audio/cdi.mp3";
+		audiotag.src = "../audio/sonata.mp3";
     } else if (tier == 1) {
-	    audiotag.src = "../audio/Save The World (Style Of Eye & Carli Remix).m4a";
+	    audiotag.src = "../audio/lacamisa.m4a";
 	} else if (tier == 2) {
-		audiotag.src = "../audio/Pressure (Alesso Remix).m4a";
+		audiotag.src = "../audio/beatit.m4a";
     } else {
-	    audiotag.src = "../audio/Save The World (Style Of Eye & Carli Remix).m4a";
+	    audiotag.src = "../audio/barbra.mp3";
     }
     
     audiotag.preload = "auto";
@@ -302,7 +302,7 @@ function compareToOriginalImage(pixelData){
         //console.log("playing PARTY MUSIC... | COUNT: " + count2);
     } else if(count2 > (3*num_pixels)/4 && count2 <= num_pixels){
         // play dubstep/skrillex/gangnam style
-        setSongToTier(2);
+        setSongToTier(3);
         //console.log("playing DUBSTEP... | COUNT: " + count2);
     }
 }
@@ -330,7 +330,7 @@ function adjustVolume() {
 	//Check for song transition
 	var timeElapsed = (new Date).getTime() - volumeServer.startTime;
 	//console.log("Elapsed: " + timeElapsed + ", target: " + volumeServer.targetTier + ", current: " + volumeServer.currentTier);
-	if (volumeServer.targetTier != volumeServer.currentTier && timeElapsed >= 20000) {
+	if (volumeServer.targetTier != volumeServer.currentTier && timeElapsed >= 15000) {
 		volumeServer.inTransition = true;
 		volumeServer.transitionTarget = volumeServer.targetTier;
 		volumeServer.transitionStartTime = (new Date).getTime();
